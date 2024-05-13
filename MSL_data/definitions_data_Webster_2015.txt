@@ -1,0 +1,10 @@
+Index number for each 2-minute data point
+Elapsed time (seconds)
+Fore optics Pressure (mbar)
+Laser plate temp (deg C)
+Fore optics temp (deg C)
+Ref cell temp (deg C)
+Science detector temp (deg C)
+Herriott cell pressure (mbar)
+CH4 mixing ratio (ppbv) from weighting the mixing ratio from 3 lines
+Weighted CH4 mixing ratio (ppbv) calculated as the difference of the value in column I minus the mean value for the empty cell for each particular run

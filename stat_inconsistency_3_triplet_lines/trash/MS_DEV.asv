@@ -1,0 +1,165 @@
+clearvars
+
+tic
+
+% marscst
+
+disp(' ')
+disp('Simulation of experiments')
+disp('=========================')
+disp(' ')
+
+%% Main parameters
+nsig = 1;
+wl         = [1 1 2]; % weight of each triplet line ('g' line twice stronger)
+
+%% Type of experiment
+t_exp      = 'E';
+% E_sol_list = [2442 2446 2615 2627 2644];
+E_sol_list = 2627;
+sol_list   = E_sol_list; nsol = length(sol_list);
+
+%% Loop (experiments)
+for isol = 1:nsol
+    sol_index       = sol_list(isol);
+    isconsist(isol) = 0;
+    
+    %% Load full data
+    if ( sol_index <  2442 )
+        SS_MSL_full_data_Webster_2015
+    else
+        SS_MSL_full_data_Webster_2021
+    end
+    
+    %% means and uncertainties
+    nFpts     = length(F_e_line_CH4);
+    nEpts     = length(E_e_line_CH4);
+    
+    F_mean(1) = mean(F_e_line_CH4);
+    F_mean(2) = mean(F_f_line_CH4);
+    F_mean(3) = mean(F_g_line_CH4);
+    
+    F_std(1)  = std(F_e_line_CH4);
+    F_std(2)  = std(F_f_line_CH4);
+    F_std(3)  = std(F_g_line_CH4);
+    
+    E_mean(1) = mean(E_e_line_CH4);
+    E_mean(2) = mean(E_f_line_CH4);
+    E_mean(3) = mean(E_g_line_CH4);
+    
+    E_std(1)  = std(E_e_line_CH4);
+    E_std(2)  = std(E_f_line_CH4);
+    E_std(3)  = std(E_g_line_CH4);
+    
+    eta_line  = zeros(1,3);
+    sig_line  = zeros(1,3);
+    
+    for j_line = 1:3
+        eta_line(j_line) = F_mean(j_line)-E_mean(j_line);
+        sig_line(j_line) = sqrt( F_std(j_line)^2/nFpts + E_std(j_line)^2/nEpts );
+    end
+    
+    eta_line = eta_line/enr_fct;
+    sig_line = sig_line/enr_fct;
+    
+    %% Wefg
+    F_3_lines   = [F_e_line_CH4 F_f_line_CH4 F_g_line_CH4]; % full-cell runs (3 triplet lines)
+    E_3_lines   = [E_e_line_CH4 E_f_line_CH4 E_g_line_CH4]; % empty-cell runs (3 triplet lines)
+    
+    F_Wefg_CH4  = sum(wl.*F_3_lines,2)/sum(wl);             % full-cell runs (Wefg)
+    E_Wefg_CH4  = sum(wl.*E_3_lines,2)/sum(wl);             % empty-cell runs (Wefg)
+    
+%     F_Wefg_CH4  = (wl(1)*F_e_line_CH4 + wl(2)*F_f_line_CH4 + wl(3)*F_g_line_CH4)/sum(wl);
+%     E_Wefg_CH4  = (wl(1)*E_e_line_CH4 + wl(2)*E_f_line_CH4 + wl(3)*E_g_line_CH4)/sum(wl);
+    
+    F_Wefg_mean = mean(F_Wefg_CH4);
+    E_Wefg_mean = mean(E_Wefg_CH4);
+    
+    F_Wefg_std  = std(F_Wefg_CH4);
+    E_Wefg_std  = std(E_Wefg_CH4);
+    
+    eta         = (F_Wefg_mean - E_Wefg_mean)/enr_fct;
+    sig         = (sqrt((F_Wefg_std)^2/nFpts + (E_Wefg_std)^2/nEpts))/enr_fct;
+    
+    disp(['eta +/- sig = ',num2str(eta,'%2.2f'),' +/- ',num2str(nsig*sig,'%2.2f'),' ppbv'])
+    
+    eta_H       = F_Wefg_mean - E_Wefg_mean; % CH4 vmr in Herriott cell
+    eta_bar_E   = E_Wefg_mean;               % mean CH4 vmr (empty-cell runs)
+    
+    %% Generating data points
+    
+    nSIM = 3;
+    
+    eta_star_e_F = eta_bar_E + eta_H + F_std(1)*randn(nSIM,nFpts);
+    eta_star_f_F = eta_bar_E + eta_H + F_std(2)*randn(nSIM,nFpts);
+    eta_star_g_F = eta_bar_E + eta_H + F_std(3)*randn(nSIM,nFpts);
+    
+    eta_star_e_E = eta_bar_E + E_std(1)*randn(nSIM,nFpts);
+    eta_star_f_E = eta_bar_E + E_std(2)*randn(nSIM,nFpts);
+    eta_star_g_E = eta_bar_E + E_std(3)*randn(nSIM,nFpts);
+    
+    
+    eta_bar_e_F  = mean(eta_star_e_F,2);
+    eta_bar_f_F  = mean(eta_star_f_F,2);
+    eta_bar_g_F  = mean(eta_star_g_F,2);
+    
+    eta_bar_e_E  = mean(eta_star_e_E,2);
+    eta_bar_f_E  = mean(eta_star_f_E,2);
+    eta_bar_g_E  = mean(eta_star_g_E,2);
+    
+    sig_bar_e_F  = std(eta_star_e_F,0,2);
+    sig_bar_f_F  = std(eta_star_f_F,0,2);
+    sig_bar_g_F  = std(eta_star_g_F,0,2);
+    
+    sig_bar_e_E  = std(eta_star_e_E,0,2);
+    sig_bar_f_E  = std(eta_star_f_E,0,2);
+    sig_bar_g_E  = std(eta_star_g_E,0,2);
+    
+    sig_bar_lines_F = [sig_bar_e_F sig_bar_f_F sig_bar_g_F];
+    sig_bar_lines_E = [sig_bar_e_E sig_bar_f_E sig_bar_g_E];
+    
+    SIM_eta_line = [eta_bar_e_F eta_bar_f_F eta_bar_g_F] - ...
+        [eta_bar_e_E eta_bar_f_E eta_bar_g_E];
+    
+    
+    SIM_sig_line = zeros(1,3);
+    for j_line = 1:3
+        SIM_sig_line(j_line) = sqrt( ...
+            sig_bar_lines_F(j_line)^2/nFpts + ...
+            sig_bar_lines_E(j_line)^2/nEpts ...
+            );
+    end
+    
+    maxval   = max(SIM_eta_line - nsig*SIM_sig_line);
+    minval   = min(SIM_eta_line + nsig*SIM_sig_line);
+    
+    if (maxval < minval), SIM_isconsistent = 1; end
+    
+    
+    
+    return
+    
+    
+    %% simulate random data points
+    
+    % full-cell run: e line
+    F_e_sim_data = 3333333333333333;
+    
+    % TO BE CONTINUED --> Reread description in SI
+    
+    
+    
+    
+    
+    
+    return
+    
+    
+    %% Check consistency
+    maxval   = max(eta_line - nsig*sig_line);
+    minval   = min(eta_line + nsig*sig_line);
+    
+    if (maxval < minval), isconsist(isol) = 1; end
+end
+
+
